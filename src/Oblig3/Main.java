@@ -8,17 +8,36 @@ import java.util.Random;
  */
 public class Main {
     public static void main(String[] args){
-        int[] arr = new int[20];
-        Random ran = new Random();
+        /*
+        int[] arr = new int[100000000]; //1 mill
+        Random ran = new Random(5);
         for(int i = 0; i < arr.length; i++){
-            arr[i] = ran.nextInt(100);
+            arr[i] = ran.nextInt(100000000);//1 mill
         }
 
+        RadixPara radixPara = new RadixPara();
+        radixPara.testRunA();
+
+*/
+
+
+        //Seeds: 5/16, god spredning + 3 7
+        int[] arr = new int[300000000];
+        Random ran = new Random(5);
+        for(int i = 0; i < arr.length; i++){
+            arr[i] = ran.nextInt(1000000000);
+        }
+        //System.out.println(Arrays.toString(arr));
 
         Radix radix = new Radix();
-        arr = radix.radixMulti(arr);
-        System.out.println(Arrays.toString(arr));
-        radix.testSort(arr);
+        //System.out.println(Arrays.toString(arr));
+        radix.testSort(radix.radixMulti(arr));
+
+        VanillaRadix vRadix = new VanillaRadix();
+        vRadix.radixMulti(arr);
+
+
+
 
     }
 }
@@ -43,6 +62,7 @@ class Radix {
 // a) finn max verdi i a[]
         for (int i = 1; i < n; i++)
             if (a[i] > max) max = a[i];
+
         while (max >= (1L << numBit)){ //Stopper når tallet er mindre enn 2^numBit for å finne hvor mange bit det er.
             numBit++;
         }
@@ -52,7 +72,7 @@ class Radix {
 
         // bestem antall bit i numBits sifre
         numDigits = Math.max(1, numBit / NUM_BIT);
-        System.out.println("numDigits: " + numDigits + " ---- Math.max(1, "+numBit +"/"+NUM_BIT+")");
+        System.out.println("numDigits: " + numDigits + " ---- Math.max(1, "+numBit +"/"+NUM_BIT+") \t antall ");
         bit = new int[numDigits];
         int rest = numBit % NUM_BIT, sum = 0;
         System.out.println("Rest: " + rest);
@@ -94,15 +114,29 @@ class Radix {
      */
     void radixSort(int[] a, int[] b, int maskLen, int shift) {
         // System.out.println(" radixSort maskLen:"+maskLen+", shift :"+shift);
-        int acumVal = 0, j, n = a.length;
+        int acumVal = 0;
+        int arrayLength = a.length;
+        int j;
+
+        //Lager et "bit" array like langt som nærmeste 2^x
         int mask = (1 << maskLen) - 1;
         int[] count = new int[mask + 1];
-        System.out.println("radixSort.count.length: " + count.length);
+        System.out.println("radixSort.count.length: " + count.length + " ShiftValue: " + shift + " Mask: " + mask);
+
+
+
 // b) count=the frequency of each radix value in a
-        for (int i = 0; i < n; i++) { //For each value in a array, increment the corresponding index in the array
+/*
+        for (int i = 0; i < arrayLength; i++) { //For each value in a array, increment the corresponding index in the array
             count[(a[i] >>> shift) & mask]++;
+            //System.out.println((a[i] >>> shift & mask));
         }
         System.out.println(Arrays.toString(count));
+*/
+        RadixPara radixPara = new RadixPara();
+        count = radixPara.runB(a, mask, shift);
+
+
 // c) Add up in 'count' - accumulated values, i.e pointers
         for (int i = 0; i <= mask; i++) {
             j = count[i];
@@ -112,7 +146,7 @@ class Radix {
 
 
 // d) move numbers in sorted order a to b
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < arrayLength; i++) {
             b[count[(a[i] >>> shift) & mask]++] = a[i];
         }
     }// end radixSort
