@@ -123,6 +123,7 @@ public class RadixPara{
     public int[] runB(int[] intArray, int mask, int shift) {//Takes an array, and makes a "bit array" out of it.
         //I'm too lazy to pinpoint the speedup, but it reduces a 1200ms sort, to a 960 ms sort @ 100 mill numbers
         //And reduces a 300 mill sort from 4000ms to 2800ms
+        //Max Number for both runs = 1000000000
 
         int[][] allCount = new int[threadCount][];
         int[] sumCount = new int[mask + 1]; //Arrayet vi returnerer
