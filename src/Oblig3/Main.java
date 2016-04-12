@@ -8,16 +8,17 @@ import java.util.Random;
  */
 public class Main {
     public static void main(String[] args){
-        int[] arr = new int[1000];
+        int[] arr = new int[20];
         Random ran = new Random();
         for(int i = 0; i < arr.length; i++){
-            arr[i] = ran.nextInt(1000);
+            arr[i] = ran.nextInt(100);
         }
 
 
         Radix radix = new Radix();
-        radix.radixMulti(arr);
+        arr = radix.radixMulti(arr);
         System.out.println(Arrays.toString(arr));
+        radix.testSort(arr);
 
     }
 }
@@ -42,23 +43,34 @@ class Radix {
 // a) finn max verdi i a[]
         for (int i = 1; i < n; i++)
             if (a[i] > max) max = a[i];
-        while (max >= (1L << numBit)){
-            numBit++; // Antall bits max, int 1000 = 10 bits, 1025 = 11 bits.
-            System.out.println("NumBit: " + numBit);
+        while (max >= (1L << numBit)){ //Stopper når tallet er mindre enn 2^numBit for å finne hvor mange bit det er.
+            numBit++;
         }
+        System.out.println("Max: " + max+ "\tStørste tallet i arrayet");
+        System.out.println("numBit:" + numBit + "\tAntall bits i største tall");
+        System.out.println("NUM_BIT:" + NUM_BIT + "\tStatic verdi"); //NUM_BIT = antall bit i en byte?
+
         // bestem antall bit i numBits sifre
         numDigits = Math.max(1, numBit / NUM_BIT);
-        System.out.println("numDigits: " + numDigits);
+        System.out.println("numDigits: " + numDigits + " ---- Math.max(1, "+numBit +"/"+NUM_BIT+")");
         bit = new int[numDigits];
         int rest = numBit % NUM_BIT, sum = 0;
+        System.out.println("Rest: " + rest);
 
         // fordel bitene vi skal sortere paa jevnt
         for (int i = 0; i < bit.length; i++) {
             bit[i] = numBit / numDigits;
-            if (rest-- > 0) bit[i]++;
+            if (rest-- > 0){
+                bit[i]++;
+            }
         }
+        System.out.println(Arrays.toString(bit));
+
+
         int[] t = a, b = new int[n];
         for (int i = 0; i < bit.length; i++) {
+            System.out.println("radixSort(a, b, bit[i], sum");
+            System.out.println("radixSort("+a.length+", " + b.length + ", bit["+i+"], "+sum);
             radixSort(a, b, bit[i], sum); // i-te siffer fra a[] til b[]
             sum += bit[i];
             // swap arrays (pointers only)
@@ -85,16 +97,19 @@ class Radix {
         int acumVal = 0, j, n = a.length;
         int mask = (1 << maskLen) - 1;
         int[] count = new int[mask + 1];
+        System.out.println("radixSort.count.length: " + count.length);
 // b) count=the frequency of each radix value in a
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) { //For each value in a array, increment the corresponding index in the array
             count[(a[i] >>> shift) & mask]++;
         }
+        System.out.println(Arrays.toString(count));
 // c) Add up in 'count' - accumulated values, i.e pointers
         for (int i = 0; i <= mask; i++) {
             j = count[i];
             count[i] = acumVal;
             acumVal += j;
         }
+
 // d) move numbers in sorted order a to b
         for (int i = 0; i < n; i++) {
             b[count[(a[i] >>> shift) & mask]++] = a[i];
