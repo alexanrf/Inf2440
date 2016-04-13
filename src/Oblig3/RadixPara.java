@@ -10,7 +10,7 @@ import java.util.concurrent.CyclicBarrier;
  * Created by alexa on 12.04.2016.
  */
 public class RadixPara{
-    int threadCount = 4;
+    int threadCount = 2;
 
 
     public int runA(int[] intArray){ //Finds the largest number in an array. Speedup ~ 1.6
@@ -142,8 +142,7 @@ public class RadixPara{
         }
 
         try{
-            barrier.await(); //Waits until first stage is complete, then resets the barrier
-            barrier.reset();
+            barrier.await(); //It has to wait through 2x barriers.
             barrier.await(); //Everything is done.
         }catch(Exception e){
             e.printStackTrace();
@@ -215,20 +214,131 @@ public class RadixPara{
                 }
             }
             try{
-                Thread.sleep(1); //I get a wierd exception here.
                 barrier.await();
             } catch(Exception e){
                 System.out.println("Exception in thread " + threadNr);
                 e.printStackTrace();
             }
         }
-
-
-
     }
 
 
+    public void runC(int[] intArray){
+        /*
+            Ta imot "bit"array og mask som argumenter
+
+            del opp intArray i like store deler (int start, end) og start trådene
+
+            Hver tråd går så gjennom sin del og regner ut av akumVal for sin del av arrayet og setter dette i et accumVal[threads] array
+            Synkroniser
+            Hver tråd regner ut av akkumVal før sin tråd:
+                tråd 0 accumVal = accumVal[0] = 0;
+                tråd 1 accumVal = accumVal[1]
+                tråd 2 accumVal = accumVal[1] + accumVal[2]
+                tråd 3 accumVal = accumVal[1] + accumVal[2] + accumVal[3]
+
+
+            for (int i = start; i <= end; i++) {
+                j = count[i];
+                count[i] = acumVal;
+                acumVal += j;
+            }
+        }
+
+        int[] intArray = {0, 1, 1, 0, 0, 0, 1, 3, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        //FasitSvar: [0, 0, 1, 2, 2, 2, 2, 3, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
+        System.out.println("[0, 1, 1, 0, 0, 0, 1, 3, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]");
+        */
+
+        CyclicBarrier barrier = new CyclicBarrier(threadCount +1);
+        int[] acumValueAll = new int[threadCount];
+
+        int split = intArray.length / threadCount;
+        //Splits up the array
+        for(int i = 0; i < threadCount; i++){
+            int start = split*i;
+            int end;
+            if(i == threadCount-1){
+                end = intArray.length;
+            }else{
+                end = split*i + split;
+            }
+            new PartCWorker(i, intArray, acumValueAll, start, end, barrier).start();
+        }
+
+        try{
+            barrier.await();
+            barrier.await();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+        //System.out.println(Arrays.toString(intArray));
+
+    }
+
+    class PartCWorker extends Thread{
+        int threadNr;
+        int[] intArray;
+        int[] acumValAll;
+        int start, end;
+        CyclicBarrier barrier;
+
+        PartCWorker(int threadNr, int[] intArray, int[] acumValAll, int start, int end, CyclicBarrier barrier){
+            this.threadNr = threadNr;
+            this.intArray = intArray;
+            this.acumValAll = acumValAll;
+            this.start = start;
+            this.end = end;
+            this.barrier = barrier;
+        }
+
+        public void run(){
+            int acumValLocal = 0;
+            for(int i = start; i < end; i++){
+                acumValLocal += intArray[i];
+            }
+            //Puts acumVal in a shared array
+            acumValAll[threadNr] = acumValLocal;
+
+            //Then sync
+            try{
+                barrier.await();
+            }catch(Exception e){
+                System.out.println("Failure in thread: " + threadNr);
+                e.printStackTrace();
+            }
+
+            acumValLocal = 0;
+            for(int i = 0; i < threadNr; i++){
+                acumValLocal += acumValAll[i];
+            }
+
+
+            //System.out.println("Thread: " + threadNr + " - acumValLocal: " + acumValLocal);
+
+            int j;
+            for (int i = start; i < end; i++) {
+                j = intArray[i];
+                intArray[i] = acumValLocal;
+                acumValLocal += j;
+            }
+
+            try{
+                barrier.await();
+            }catch(Exception e){
+                System.out.println("Failure in thread: " + threadNr);
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public void runD(){
+        //Trenger a, b, count,
+    }
 
 }
+
 
 

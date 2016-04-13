@@ -20,22 +20,44 @@ public class Main {
 
 */
 
-
+/* Tests our MainRadix to vanillaRadix
         //Seeds: 5/16, god spredning + 3 7
-        int[] arr = new int[300000000];
+        for(int j = 0; j < 10; j++){
+            int[] arr = new int[100000000]; //10 mill
+            Random ran = new Random();
+            for(int i = 0; i < arr.length; i++){
+                arr[i] = ran.nextInt(1000000000);
+            }
+            //System.out.println(Arrays.toString(arr));
+
+            Radix radix = new Radix();
+            //System.out.println(Arrays.toString(arr));
+            System.out.println("Parallell");
+            radix.testSort(radix.radixMulti(arr));
+            System.out.println("Sequential");
+
+            VanillaRadix vRadix = new VanillaRadix();
+            vRadix.radixMulti(arr);
+        }
+        */
+
+
+
+
+        int[] arr = new int[10]; //10 mill
+        Radix radix = new Radix();
         Random ran = new Random(5);
         for(int i = 0; i < arr.length; i++){
-            arr[i] = ran.nextInt(1000000000);
+            arr[i] = ran.nextInt(16);
         }
-        //System.out.println(Arrays.toString(arr));
+        System.out.println("Input: " + Arrays.toString(arr));
+        radix.radixMulti(arr);
 
-        Radix radix = new Radix();
-        //System.out.println(Arrays.toString(arr));
-        radix.testSort(radix.radixMulti(arr));
 
-        VanillaRadix vRadix = new VanillaRadix();
-        vRadix.radixMulti(arr);
-
+        /* Slett om C fungerer
+        RadixPara radixPara = new RadixPara();
+        radixPara.runC();
+        */
 
 
 
@@ -66,17 +88,20 @@ class Radix {
         while (max >= (1L << numBit)){ //Stopper når tallet er mindre enn 2^numBit for å finne hvor mange bit det er.
             numBit++;
         }
+        /* DEBUG OUTPUT
         System.out.println("Max: " + max+ "\tStørste tallet i arrayet");
         System.out.println("numBit:" + numBit + "\tAntall bits i største tall");
         System.out.println("NUM_BIT:" + NUM_BIT + "\tStatic verdi"); //NUM_BIT = antall bit i en byte?
+*/
 
         // bestem antall bit i numBits sifre
         numDigits = Math.max(1, numBit / NUM_BIT);
-        System.out.println("numDigits: " + numDigits + " ---- Math.max(1, "+numBit +"/"+NUM_BIT+") \t antall ");
         bit = new int[numDigits];
         int rest = numBit % NUM_BIT, sum = 0;
+        /* DEBUG OUTPUT
+        System.out.println("numDigits: " + numDigits + " ---- Math.max(1, "+numBit +"/"+NUM_BIT+") \t antall ");
         System.out.println("Rest: " + rest);
-
+*/
         // fordel bitene vi skal sortere paa jevnt
         for (int i = 0; i < bit.length; i++) {
             bit[i] = numBit / numDigits;
@@ -84,13 +109,15 @@ class Radix {
                 bit[i]++;
             }
         }
-        System.out.println(Arrays.toString(bit));
+        //System.out.println(Arrays.toString(bit));
 
 
         int[] t = a, b = new int[n];
         for (int i = 0; i < bit.length; i++) {
+            /* DEBUG OUTPUT
             System.out.println("radixSort(a, b, bit[i], sum");
             System.out.println("radixSort("+a.length+", " + b.length + ", bit["+i+"], "+sum);
+            */
             radixSort(a, b, bit[i], sum); // i-te siffer fra a[] til b[]
             sum += bit[i];
             // swap arrays (pointers only)
@@ -121,35 +148,48 @@ class Radix {
         //Lager et "bit" array like langt som nærmeste 2^x
         int mask = (1 << maskLen) - 1;
         int[] count = new int[mask + 1];
-        System.out.println("radixSort.count.length: " + count.length + " ShiftValue: " + shift + " Mask: " + mask);
+        //System.out.println("radixSort.count.length: " + count.length + " ShiftValue: " + shift + " Mask: " + mask);
 
 
 
 // b) count=the frequency of each radix value in a
-/*
         for (int i = 0; i < arrayLength; i++) { //For each value in a array, increment the corresponding index in the array
             count[(a[i] >>> shift) & mask]++;
             //System.out.println((a[i] >>> shift & mask));
         }
-        System.out.println(Arrays.toString(count));
-*/
+        System.out.println("B: " + Arrays.toString(count));
+
+
+/* Parallell implementasjon
         RadixPara radixPara = new RadixPara();
         count = radixPara.runB(a, mask, shift);
-
+*/
 
 // c) Add up in 'count' - accumulated values, i.e pointers
+
         for (int i = 0; i <= mask; i++) {
             j = count[i];
             count[i] = acumVal;
             acumVal += j;
         }
+        System.out.println("C: " + Arrays.toString(count));
 
 
+        /*Parallell implementasjon C
+        RadixPara radixPara = new RadixPara();
+        radixPara.runC(count);
+*/
+        System.out.println("Pre-D: " + Arrays.toString(b));
 // d) move numbers in sorted order a to b
         for (int i = 0; i < arrayLength; i++) {
-            b[count[(a[i] >>> shift) & mask]++] = a[i];
+            int tempInt = count[(a[i] >>> shift) & mask]++;
+            b[tempInt] = a[i];
+            System.out.println("b["+tempInt+"] - " + "a["+i+"]");
         }
+        System.out.println("D: " + Arrays.toString(b));
     }// end radixSort
+
+    //D trenger: a, count, mask, b,
 
     void testSort(int[] a) {
         for (int i = 0; i < a.length - 1; i++) {
@@ -161,3 +201,28 @@ class Radix {
         }
     }// end simple sorteingstest
 }
+
+
+/*
+Forelesning:
+c) Legger sammen verdiene  i count[] til 'pekere' til b[]
+d) flytt tallene fra a[] til b[]
+
+c)
+Gå gjennom arrayet og telle opp hvor mange tall det er i sin del.
+Hver tråd får da vite hvor de må starte
+Parallellt gå gjennom sin del og sett inn i arrayet mens man inkrementerer count
+
+d)
+
+
+
+
+
+
+
+
+
+
+
+ */
