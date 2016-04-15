@@ -8,6 +8,7 @@ import java.util.Random;
  */
 public class Main {
     public static void main(String[] args){
+        System.out.println("HEY");
         /*
         int[] arr = new int[100000000]; //1 mill
         Random ran = new Random(5);
@@ -24,7 +25,7 @@ public class Main {
         //Seeds: 5/16, god spredning + 3 7
         for(int j = 0; j < 10; j++){
             int[] arr = new int[100000000]; //10 mill
-            Random ran = new Random();
+            Random ran = new Random(5);
             for(int i = 0; i < arr.length; i++){
                 arr[i] = ran.nextInt(1000000000);
             }
@@ -43,15 +44,20 @@ public class Main {
 
 
 
+/*
 
-        int[] arr = new int[10]; //10 mill
+        int[] arr = new int[100]; //10 mill
         Radix radix = new Radix();
-        Random ran = new Random(5);
+        Random ran = new Random();
         for(int i = 0; i < arr.length; i++){
-            arr[i] = ran.nextInt(16);
+            arr[i] = ran.nextInt(100000); //16
         }
         System.out.println("Input: " + Arrays.toString(arr));
-        radix.radixMulti(arr);
+        arr = radix.radixMulti(arr);
+
+        System.out.println(Arrays.toString(arr));
+
+*/
 
 
         /* Slett om C fungerer
@@ -59,11 +65,34 @@ public class Main {
         radixPara.runC();
         */
 
+/*
+        int[] arr = new int[100]; //10 mill
+        Random ran = new Random();
+        for(int i = 0; i < arr.length; i++){
+            arr[i] = ran.nextInt(100); //16
+        }
+        System.out.println(Arrays.toString(arr));
+        RadixParallell radixPara = new RadixParallell();
+        System.out.println("LARGEST: " + radixPara.findLargest(arr));
+
+        radixPara.shutDownThreads();
+        //System.exit(1);
+*/
+
+        int[] arr = new int[10000]; //10 mill
+        Radix radix = new Radix();
+        Random ran = new Random();
+        for(int i = 0; i < arr.length; i++){
+            arr[i] = ran.nextInt(100000); //16
+        }
+        System.out.println("Input: " + Arrays.toString(arr));
+        arr = radix.radixMulti(arr);
 
 
     }
-}
 
+
+}
 
 class Radix {
     /**
@@ -142,22 +171,21 @@ class Radix {
     void radixSort(int[] a, int[] b, int maskLen, int shift) {
         // System.out.println(" radixSort maskLen:"+maskLen+", shift :"+shift);
         int acumVal = 0;
-        int arrayLength = a.length;
         int j;
 
         //Lager et "bit" array like langt som nærmeste 2^x
         int mask = (1 << maskLen) - 1;
         int[] count = new int[mask + 1];
-        //System.out.println("radixSort.count.length: " + count.length + " ShiftValue: " + shift + " Mask: " + mask);
+        System.out.println("radixSort.count.length: " + count.length + " ShiftValue: " + shift + " Mask: " + mask);
 
 
 
 // b) count=the frequency of each radix value in a
-        for (int i = 0; i < arrayLength; i++) { //For each value in a array, increment the corresponding index in the array
+        for (int i = 0; i < a.length; i++) { //For each value in a array, increment the corresponding index in the array
             count[(a[i] >>> shift) & mask]++;
             //System.out.println((a[i] >>> shift & mask));
         }
-        System.out.println("B: " + Arrays.toString(count));
+        //System.out.println("B: " + Arrays.toString(count));
 
 
 /* Parallell implementasjon
@@ -172,21 +200,36 @@ class Radix {
             count[i] = acumVal;
             acumVal += j;
         }
-        System.out.println("C: " + Arrays.toString(count));
+        //System.out.println("C: " + Arrays.toString(count));
 
 
         /*Parallell implementasjon C
         RadixPara radixPara = new RadixPara();
         radixPara.runC(count);
 */
+        //count, a, b, shift, mask
+        /*
+        System.out.println("count" + Arrays.toString(count));
+        System.out.println("a: " + Arrays.toString(a));
+        System.out.println("B: " + Arrays.toString(b));
+        System.out.println("shift: " + shift);
+        System.out.println("mask: " + mask);
+
         System.out.println("Pre-D: " + Arrays.toString(b));
+        */
 // d) move numbers in sorted order a to b
-        for (int i = 0; i < arrayLength; i++) {
+/*
+        for (int i = 0; i < a.length; i++) {
             int tempInt = count[(a[i] >>> shift) & mask]++;
             b[tempInt] = a[i];
-            System.out.println("b["+tempInt+"] - " + "a["+i+"]");
+            System.out.println("b["+i+"] - " + "a["+tempInt+"]");
         }
-        System.out.println("D: " + Arrays.toString(b));
+        //System.out.println("D: " + Arrays.toString(b));
+*/
+
+        RadixPara radixPara = new RadixPara();
+        radixPara.runD(a, b, count, shift, mask);
+
     }// end radixSort
 
     //D trenger: a, count, mask, b,
@@ -196,7 +239,7 @@ class Radix {
             if (a[i] > a[i + 1]) {
                 System.out.println("SorteringsFEIL på plass: " +
                         i + " a[" + i + "]:" + a[i] + " > a[" + (i + 1) + "]:" + a[i + 1]);
-                return;
+                //return;
             }
         }
     }// end simple sorteingstest

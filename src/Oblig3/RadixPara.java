@@ -1,31 +1,29 @@
 package Oblig3;
 
 
-import java.util.Arrays;
-import java.util.Random;
-import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 
 /**
  * Created by alexa on 12.04.2016.
  */
-public class RadixPara{
-    int threadCount = 2;
+public class RadixPara {
+    int threadCount = 4;
 
 
-    public int runA(int[] intArray){ //Finds the largest number in an array. Speedup ~ 1.6
-        int split = intArray.length/threadCount;
+    public int runA(int[] intArray) { //Finds the largest number in an array. Speedup ~ 1.6
+        int split = intArray.length / threadCount;
         int[] results = new int[threadCount]; //This is where the results are saved by the threads.
         FindLargestWorker[] workers = new FindLargestWorker[threadCount];
 
         //Splits up the array, and starts the threads
-        for(int i = 0; i < threadCount; i++){
-            int start = split*i;
+        for (int i = 0; i < threadCount; i++) {
+            int start = split * i;
             int end;
-            if(i == threadCount-1){
+            if (i == threadCount - 1) {
                 end = intArray.length;
-            }else{
-                end = split*i + split;
+            } else {
+                end = split * i + split;
             }
 
             workers[i] = new FindLargestWorker(i, intArray, start, end, results);
@@ -33,71 +31,29 @@ public class RadixPara{
         }
 
         //Waits for threads to finish
-        for(FindLargestWorker w : workers){
-            try{
+        for (FindLargestWorker w : workers) {
+            try {
                 w.join();
-            }catch(Exception e){ e.printStackTrace(); System.exit(0);}
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(0);
+            }
         }
 
         //Then returns the largest number
         return findLargest(results, 0, results.length);
     }
 
-    public void testRunA(){ //Does tests to compare sequential findLargest to the parallell one.
-        int[] arraySizes = {2000, 20000, 200000, 2000000, 20000000, 200000000}; //2k, 20k, 200k, 2 mill, 20 mill, 200 mill,
-        Random rand = new Random(420);
-        int maxSizeInt = 1000000000; // 1 billion
 
-        int amountOfTests = 5;
-
-        //Sequential.
-        System.out.println(" - - - - - - Find Largest - - - - - - ");
-        System.out.print(" - - - - - - Sequential tests - - - - - - ");
-        for(int i = 0; i < arraySizes.length; i++){
-            System.out.print("\n" + arraySizes[i] + ": ");
-            for(int j = 0; j < amountOfTests; j++) {
-                //Fills the array with ints
-                int[] intArray = new int[arraySizes[i]];
-                for(int k = 0; k < intArray.length; k++){
-                    intArray[k] = rand.nextInt(maxSizeInt);
-                }
-
-                //Starts the clock
-                long t = System.nanoTime();
-                findLargest(intArray, 0, intArray.length-1);
-                double time = (System.nanoTime()-t)/1000000.0;
-                System.out.print(time + "ms - ");
-
-            }
-        }
-        System.out.print("\n - - - - - - Concurrent tests - - - - - - ");
-        for(int i = 0; i < arraySizes.length; i++){
-            System.out.print("\n" + arraySizes[i] + ": ");
-            for(int j = 0; j < amountOfTests; j++) {
-                //Fills the array with ints
-                int[] intArray = new int[arraySizes[i]];
-                for(int k = 0; k < intArray.length; k++){
-                    intArray[k] = rand.nextInt(maxSizeInt);
-                }
-
-                //Starts the clock
-                long t = System.nanoTime();
-                runA(intArray);
-                double time = (System.nanoTime()-t)/1000000.0;
-                System.out.print(time + "ms - ");
-            }
-        }
-    }
-
-    private int findLargest(int[] intArray, int start, int end){
+    private int findLargest(int[] intArray, int start, int end) {
         int largest = intArray[start];
-        for(int i = start+1; i<end; i++){
-            if(intArray[i] > largest) largest = intArray[i];
+        for (int i = start + 1; i < end; i++) {
+            if (intArray[i] > largest) largest = intArray[i];
         }
         return largest;
     }
 
-    class FindLargestWorker extends Thread{
+    class FindLargestWorker extends Thread {
         int threadNr;
         int[] intArray;
         int start;
@@ -113,7 +69,7 @@ public class RadixPara{
         }
 
         @Override
-        public void run(){
+        public void run() {
             results[threadNr] = findLargest(intArray, start, end);
         }
     }
@@ -127,7 +83,7 @@ public class RadixPara{
 
         int[][] allCount = new int[threadCount][];
         int[] sumCount = new int[mask + 1]; //Arrayet vi returnerer
-        CyclicBarrier barrier = new CyclicBarrier(threadCount+1);
+        CyclicBarrier barrier = new CyclicBarrier(threadCount + 1);
         int split = intArray.length / threadCount;
 
         for (int i = 0; i < threadCount; i++) {
@@ -138,13 +94,13 @@ public class RadixPara{
             } else {
                 end = split * i + split;
             }
-            new PartBWorker(i, intArray, start, end, allCount, sumCount,  mask, shift, barrier).start();
+            new PartBWorker(i, intArray, start, end, allCount, sumCount, mask, shift, barrier).start();
         }
 
-        try{
+        try {
             barrier.await(); //It has to wait through 2x barriers.
             barrier.await(); //Everything is done.
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -152,7 +108,7 @@ public class RadixPara{
 
     }
 
-    public class PartBWorker extends Thread{
+    public class PartBWorker extends Thread {
         int threadNr;
         int[] intArray;
         int start;
@@ -165,7 +121,7 @@ public class RadixPara{
 
         int[] count;
 
-        PartBWorker(int threadNr, int[] intArray, int start, int end, int[][] allCount, int[] sumCount, int mask, int shift, CyclicBarrier barrier){
+        PartBWorker(int threadNr, int[] intArray, int start, int end, int[][] allCount, int[] sumCount, int mask, int shift, CyclicBarrier barrier) {
             this.threadNr = threadNr;
             this.intArray = intArray;
             this.start = start;
@@ -176,46 +132,45 @@ public class RadixPara{
             this.shift = shift;
             this.barrier = barrier;
 
-            count = new int[mask+1]; //Local array
+            count = new int[mask + 1]; //Local array
         }
 
         @Override
-        public void run(){
+        public void run() {
             //Adds up this threads array values to its local count.
-            for(int i = start; i < end; i++){
+            for (int i = start; i < end; i++) {
                 count[(intArray[i] >>> shift) & mask]++;
             }
 
             allCount[threadNr] = count;
-            try{
+            try {
                 barrier.await();
-            }catch(Exception e){
+            } catch (Exception e) {
                 System.out.println("Exception in thread " + threadNr);
                 e.printStackTrace();
             }
 
             //Divides the new array into equal parts
             int threadCount = allCount.length;
-            int split = count.length/threadCount;
+            int split = count.length / threadCount;
             start = split * threadNr;
 
             if (threadNr == threadCount - 1) {
                 end = count.length;
-            }
-            else {
+            } else {
                 end = split * threadNr + split;
             }
 
 
             //Goes through the start -> end numbers in all of the bitArrays, and adds them all to Count.
-            for(int thread = 0; thread < allCount.length; thread++){ //For each thread
-                for(int i = start; i < end; i++){ //Go through the assigned values
+            for (int thread = 0; thread < allCount.length; thread++) { //For each thread
+                for (int i = start; i < end; i++) { //Go through the assigned values
                     sumCount[i] += allCount[thread][i];
                 }
             }
-            try{
+            try {
                 barrier.await();
-            } catch(Exception e){
+            } catch (Exception e) {
                 System.out.println("Exception in thread " + threadNr);
                 e.printStackTrace();
             }
@@ -223,7 +178,7 @@ public class RadixPara{
     }
 
 
-    public void runC(int[] intArray){
+    public void runC(int[] intArray) {
         /*
             Ta imot "bit"array og mask som argumenter
 
@@ -250,26 +205,26 @@ public class RadixPara{
         System.out.println("[0, 1, 1, 0, 0, 0, 1, 3, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]");
         */
 
-        CyclicBarrier barrier = new CyclicBarrier(threadCount +1);
+        CyclicBarrier barrier = new CyclicBarrier(threadCount + 1);
         int[] acumValueAll = new int[threadCount];
 
         int split = intArray.length / threadCount;
         //Splits up the array
-        for(int i = 0; i < threadCount; i++){
-            int start = split*i;
+        for (int i = 0; i < threadCount; i++) {
+            int start = split * i;
             int end;
-            if(i == threadCount-1){
+            if (i == threadCount - 1) {
                 end = intArray.length;
-            }else{
-                end = split*i + split;
+            } else {
+                end = split * i + split;
             }
             new PartCWorker(i, intArray, acumValueAll, start, end, barrier).start();
         }
 
-        try{
+        try {
             barrier.await();
             barrier.await();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -277,14 +232,14 @@ public class RadixPara{
 
     }
 
-    class PartCWorker extends Thread{
+    class PartCWorker extends Thread {
         int threadNr;
         int[] intArray;
         int[] acumValAll;
         int start, end;
         CyclicBarrier barrier;
 
-        PartCWorker(int threadNr, int[] intArray, int[] acumValAll, int start, int end, CyclicBarrier barrier){
+        PartCWorker(int threadNr, int[] intArray, int[] acumValAll, int start, int end, CyclicBarrier barrier) {
             this.threadNr = threadNr;
             this.intArray = intArray;
             this.acumValAll = acumValAll;
@@ -293,24 +248,24 @@ public class RadixPara{
             this.barrier = barrier;
         }
 
-        public void run(){
+        public void run() {
             int acumValLocal = 0;
-            for(int i = start; i < end; i++){
+            for (int i = start; i < end; i++) {
                 acumValLocal += intArray[i];
             }
             //Puts acumVal in a shared array
             acumValAll[threadNr] = acumValLocal;
 
             //Then sync
-            try{
+            try {
                 barrier.await();
-            }catch(Exception e){
+            } catch (Exception e) {
                 System.out.println("Failure in thread: " + threadNr);
                 e.printStackTrace();
             }
 
             acumValLocal = 0;
-            for(int i = 0; i < threadNr; i++){
+            for (int i = 0; i < threadNr; i++) {
                 acumValLocal += acumValAll[i];
             }
 
@@ -324,9 +279,9 @@ public class RadixPara{
                 acumValLocal += j;
             }
 
-            try{
+            try {
                 barrier.await();
-            }catch(Exception e){
+            } catch (Exception e) {
                 System.out.println("Failure in thread: " + threadNr);
                 e.printStackTrace();
             }
@@ -334,10 +289,64 @@ public class RadixPara{
     }
 
 
-    public void runD(){
-        //Trenger a, b, count,
+    public void runD(int[] a, int[] b, int[] count, int shift, int mask) {
+        PartDWorker[] workers = new PartDWorker[threadCount];
+
+        int split = a.length / threadCount;
+        for (int i = 0; i < threadCount; i++) {
+            int start = split * i;
+            int end;
+            if (i == threadCount - 1) {
+                end = a.length;
+            } else {
+                end = split * i + split;
+            }
+
+            workers[i] = new PartDWorker(count, a, b, shift, mask, start, end);
+            workers[i].start();
+        }
+
+
+        try{
+            for(PartDWorker w : workers){
+                w.join();
+            }
+            Thread.sleep(500);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+
     }
 
+    class PartDWorker extends Thread{
+        int[] count;
+        int[] a;
+        int[] b;
+        int shift;
+        int mask;
+        int start;
+        int end;
+
+        PartDWorker(int[] count, int[] a, int[] b, int shift, int mask, int start, int end) {
+            this.count = count;
+            this.a = a;
+            this.b = b;
+            this.shift = shift;
+            this.mask = mask;
+            this.start = start;
+            this.end = end;
+        }
+
+        public void run() {
+            for (int i = start; i < end; i++) {
+                int tempInt = count[(a[i] >>> shift) & mask]++;
+                b[count[(a[i] >>> shift) & mask]++] = a[i];
+
+            }
+        }
+
+    }
 }
 
 
